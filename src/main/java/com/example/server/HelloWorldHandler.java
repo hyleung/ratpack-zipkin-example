@@ -18,7 +18,6 @@ package com.example.server;
 import brave.Span;
 import brave.Tracer;
 import brave.http.HttpTracing;
-import com.github.kristofa.brave.KeyValueAnnotation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ratpack.handling.Context;
@@ -41,7 +40,6 @@ public class HelloWorldHandler implements Handler {
 
   @Override
   public void handle(final Context ctx) throws Exception {
-    ctx.getExecution().add(KeyValueAnnotation.create("some-key", "some-value"));
     Tracer tracer = httpTracing.tracing().tracer();
     Span currentSpan = tracer.currentSpan();
     final Span child = tracer.newChild(currentSpan.context()).name("HelloWorld handler").start();
