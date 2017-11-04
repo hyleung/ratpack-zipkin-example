@@ -5,14 +5,13 @@ import ratpack.guice.Guice;
 import ratpack.logging.MDCInterceptor;
 import ratpack.server.RatpackServer;
 import ratpack.zipkin.ServerTracingModule;
-import zipkin.Span;
-import zipkin.reporter.AsyncReporter;
-import zipkin.reporter.Reporter;
-import zipkin.reporter.kafka10.KafkaSender;
-import zipkin.reporter.libthrift.LibthriftSender;
-import zipkin.reporter.okhttp3.OkHttpSender;
+import zipkin2.Span;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
+import zipkin2.reporter.kafka11.KafkaSender;
+import zipkin2.reporter.okhttp3.OkHttpSender;
 
-/**
+/*
  * RatPack Server.
  */
 public class App {
@@ -53,22 +52,19 @@ public class App {
   }
 
   private static Reporter<Span> spanReporter() {
-    String scribeHost = System.getProperty("scribeHost");
     String kafkaHost = System.getProperty("kafkaHost");
     String okHttpHost = System.getProperty("okhttpHost");
-    if (scribeHost != null) {
-      return AsyncReporter.builder(LibthriftSender.builder()
-                                           .host(scribeHost)
-                                           .port(9410)
-                                           .build()).build();
-    } else if (kafkaHost != null) {
-      return AsyncReporter.builder(KafkaSender
-          .builder()
-          .bootstrapServers(kafkaHost)
+    if (kafkaHost != null) {
+      KafkaSender kafkaSender = KafkaSender
+          .create(kafkaHost)
+          .toBuilder()
           .topic("zipkin")
-          .build()).build();
+          .build();
+      return AsyncReporter.create(kafkaSender);
     } else if (okHttpHost != null) {
-        return AsyncReporter.create(OkHttpSender.create(String.format("http://%s:9411/api/v1/spans", okHttpHost)));
+      OkHttpSender okHttpSender = OkHttpSender
+          .create(String.format("http://%s:9411/api/v2/spans", okHttpHost));
+      return AsyncReporter.create(okHttpSender);
     } else {
       return Reporter.CONSOLE;
     }
