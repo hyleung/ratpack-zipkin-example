@@ -26,7 +26,7 @@ public class App {
               config
                   .serviceName("ratpack-demo")
                   .sampler(Sampler.create(samplingPct))
-                  .spanReporter(spanReporter());
+                  .spanReporterV2(spanReporter());
             })
             .bind(HelloWorldHandler.class)
             .add(MDCInterceptor.instance())
@@ -42,7 +42,7 @@ public class App {
             .module(ServerTracingModule.class, config -> config
                 .serviceName("other-server")
                 .sampler(Sampler.create(samplingPct))
-                .spanReporter(spanReporter()))
+                .spanReporterV2(spanReporter()))
             .bind(HelloWorldHandler.class)
             .add(MDCInterceptor.instance())
         ))
