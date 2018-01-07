@@ -5,12 +5,11 @@ import ratpack.guice.Guice;
 import ratpack.logging.MDCInterceptor;
 import ratpack.server.RatpackServer;
 import ratpack.zipkin.ServerTracingModule;
-import zipkin.Span;
-import zipkin.reporter.AsyncReporter;
-import zipkin.reporter.Reporter;
-import zipkin.reporter.kafka10.KafkaSender;
-import zipkin.reporter.libthrift.LibthriftSender;
-import zipkin.reporter.okhttp3.OkHttpSender;
+import zipkin2.Span;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
+import zipkin2.reporter.kafka11.KafkaSender;
+import zipkin2.reporter.okhttp3.OkHttpSender;
 
 /**
  * RatPack Server.
@@ -27,7 +26,7 @@ public class App {
               config
                   .serviceName("ratpack-demo")
                   .sampler(Sampler.create(samplingPct))
-                  .spanReporter(spanReporter());
+                  .spanReporterV2(spanReporter());
             })
             .bind(HelloWorldHandler.class)
             .add(MDCInterceptor.instance())
@@ -43,7 +42,7 @@ public class App {
             .module(ServerTracingModule.class, config -> config
                 .serviceName("other-server")
                 .sampler(Sampler.create(samplingPct))
-                .spanReporter(spanReporter()))
+                .spanReporterV2(spanReporter()))
             .bind(HelloWorldHandler.class)
             .add(MDCInterceptor.instance())
         ))
@@ -53,22 +52,16 @@ public class App {
   }
 
   private static Reporter<Span> spanReporter() {
-    String scribeHost = System.getProperty("scribeHost");
     String kafkaHost = System.getProperty("kafkaHost");
     String okHttpHost = System.getProperty("okhttpHost");
-    if (scribeHost != null) {
-      return AsyncReporter.builder(LibthriftSender.builder()
-                                           .host(scribeHost)
-                                           .port(9410)
-                                           .build()).build();
-    } else if (kafkaHost != null) {
+    if (kafkaHost != null) {
       return AsyncReporter.builder(KafkaSender
-          .builder()
+          .newBuilder()
           .bootstrapServers(kafkaHost)
           .topic("zipkin")
           .build()).build();
     } else if (okHttpHost != null) {
-        return AsyncReporter.create(OkHttpSender.create(String.format("http://%s:9411/api/v1/spans", okHttpHost)));
+        return AsyncReporter.create(OkHttpSender.create(String.format("http://%s:9411/api/v2/spans", okHttpHost)));
     } else {
       return Reporter.CONSOLE;
     }
